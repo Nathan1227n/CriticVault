@@ -10,7 +10,8 @@
 
 ## 📋 Visão Geral
 
-**CriticVault** é uma aplicação web moderna que demonstra as melhores práticas de desenvolvimento de uma **Single Page Application (SPA)** com arquitetura separada Frontend/Backend:
+O CriticVault é uma plataforma interativa de avaliações de filmes, jogos e livros, inspirada em sistemas de notas agregadas como o Metacritic.
+O objetivo do projeto é permitir que usuários descubram, avaliem e compartilhem suas opiniões, gerando um score dinâmico da comunidade para cada obra.
 
 - **Frontend**: React com Vite (interface reativa e responsiva)
 - **Backend**: Django REST Framework (API robusta e autenticação JWT)
