@@ -4,8 +4,9 @@ import Home from './pages/Home';
 import Login from './pages/Login';
 import Reviews from './pages/Reviews';
 import Profile from './pages/Profile';
+import ProfileSettings from './pages/ProfileSettings';
 import ReviewDetail from './pages/ReviewDetail';
-import EditReview from './pages/EditReview'; // <-- 1. Importe a nova página aqui
+import EditReview from './pages/EditReview';
 import CreateReview from './pages/CreateReview';
 
 function App() {
@@ -17,8 +18,9 @@ function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/reviews" element={<Reviews />} />
         <Route path="/perfil" element={<Profile />} />
+        <Route path="/perfil/settings" element={<ProfileSettings />} />
         <Route path="/review/:id" element={<ReviewDetail />} />
-        <Route path="/editar-review/:id" element={<EditReview />} /> {/* <-- 2. Adicione a rota aqui */}
+        <Route path="/editar-review/:id" element={<EditReview />} />
         <Route path="/nova-review" element={<CreateReview />} />
       </Routes>
     </Router>

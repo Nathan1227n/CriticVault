@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import authService from '../services/authService';
 
 export default function CreateReview() {
   const navigate = useNavigate();
@@ -10,14 +10,16 @@ export default function CreateReview() {
   const [nota, setNota] = useState('');
   const [texto, setTexto] = useState('');
   const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
   useEffect(() => {
     // Busca os filmes/jogos/livros cadastrados no banco para o usuário escolher
-    axios.get('http://127.0.0.1:8000/api/itens/')
-      .then(response => {
-        setItens(response.data);
-        if (response.data.length > 0) {
-          setItemSelecionado(response.data[0].id); // Seleciona o primeiro por padrão
+    fetch('http://localhost:8000/api/itens/')
+      .then(response => response.json())
+      .then(data => {
+        setItens(data);
+        if (data.length > 0) {
+          setItemSelecionado(data[0].id); // Seleciona o primeiro por padrão
         }
       })
       .catch(error => console.error("Erro ao buscar itens:", error));
@@ -26,25 +28,38 @@ export default function CreateReview() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setErro('');
+    setCarregando(true);
 
     try {
-      const token = localStorage.getItem('access_token');
+      const token = authService.getAccessToken();
       if (!token) {
         setErro("Você precisa estar logado para avaliar.");
+        setCarregando(false);
         return;
       }
 
-      // TRUQUE DE MESTRE: Decodificando o Token JWT para pegar o ID do usuário logado
-      const payload = JSON.parse(atob(token.split('.')[1]));
-      const userId = payload.user_id;
+      // NOVO: Usar o método getUserData para pegar o ID do usuário de forma segura
+      const userData = await authService.getUserData(token);
+      const userId = userData.id;
 
-      // Envia os dados para o Django criar a review
-      await axios.post('http://127.0.0.1:8000/api/reviews/', {
-        item: itemSelecionado,
-        usuario: userId,
-        nota: parseInt(nota),
-        texto: texto
+      // Envia os dados para o Django criar a review com autenticação
+      const response = await fetch('http://localhost:8000/api/reviews/', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          item: itemSelecionado,
+          usuario: userId,
+          nota: parseInt(nota),
+          texto: texto
+        })
       });
+
+      if (!response.ok) {
+        throw new Error('Erro ao criar review');
+      }
 
       // Redireciona para o perfil para ele ver a review recém-criada
       navigate('/perfil');
@@ -52,6 +67,8 @@ export default function CreateReview() {
     } catch (error) {
       console.error("Erro ao criar review:", error);
       setErro("Ocorreu um erro ao salvar. Verifique os dados.");
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -113,8 +130,13 @@ export default function CreateReview() {
 
           {erro && <p style={{ color: '#ff5252', fontSize: '0.9rem' }}>{erro}</p>}
 
-          <button type="submit" className="btn-primary" style={{ padding: '15px', fontSize: '1.1rem', marginTop: '10px' }}>
-            Publicar Avaliação
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ padding: '15px', fontSize: '1.1rem', marginTop: '10px' }}
+            disabled={carregando}
+          >
+            {carregando ? 'Publicando...' : 'Publicar Avaliação'}
           </button>
         </form>
       </div>

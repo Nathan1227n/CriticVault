@@ -1,59 +1,76 @@
 import { useState } from 'react';
-import axios from 'axios';
+import { useNavigate } from 'react-router-dom';
+import authService from '../services/authService';
 
 export default function Login() {
   // Estado para controlar se mostra "login" ou "register"
-  const [modo, setModo] = useState('login'); 
+  const [modo, setModo] = useState('login');
+  const navigate = useNavigate();
   
   // Estados para os inputs
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [erro, setErro] = useState('');
+  const [carregando, setCarregando] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setErro(''); // Limpa erros anteriores
+    setErro('');
+    setCarregando(true);
 
     try {
       if (modo === 'login') {
-        // Envia requisição de LOGIN para o Controlador
-        const response = await axios.post('http://127.0.0.1:8000/api/token/', {
-          username: email, // Usando o email como username no backend padrão
-          password: password
-        });
+        // NOVO: Fazer login com novo endpoint
+        const { accessToken, refreshToken, user } = await authService.login(username, password);
         
-        // Salva os tokens no navegador (LocalStorage)
-        localStorage.setItem('access_token', response.data.access);
-        localStorage.setItem('refresh_token', response.data.refresh);
+        // Salvar tokens
+        authService.saveTokens(accessToken, refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
         
-        // Salva o nome do usuário para a página de Perfil saber quem é
-        localStorage.setItem('username', email);
+        // Redirecionar para home
+        navigate('/');
         
-        // Redireciona para a Home forçando recarregamento (para a Navbar atualizar)
-        window.location.href = '/';
-
       } else {
-        // Envia requisição de CADASTRO para o Controlador
-        const response = await axios.post('http://127.0.0.1:8000/api/registro/', {
-          username: username,
-          email: email,
-          password: password
-        });
+        // NOVO: Registrar com novo endpoint
+        if (password !== passwordConfirm) {
+          setErro('As senhas não coincidem');
+          setCarregando(false);
+          return;
+        }
 
-        // O backend já nos devolve logado
-        localStorage.setItem('access_token', response.data.access);
-        localStorage.setItem('refresh_token', response.data.refresh);
+        const { accessToken, refreshToken, user } = await authService.register(
+          username,
+          email,
+          firstName,
+          lastName,
+          password,
+          passwordConfirm
+        );
         
-        // Salva o nome de usuário escolhido no cadastro
-        localStorage.setItem('username', username);
+        // Salvar tokens
+        authService.saveTokens(accessToken, refreshToken);
+        localStorage.setItem('user', JSON.stringify(user));
         
-        // Redireciona para a Home forçando recarregamento
-        window.location.href = '/';
+        // Redirecionar para home
+        navigate('/');
       }
     } catch (error) {
-      setErro('Credenciais inválidas ou erro no servidor. Tente novamente.');
       console.error(error);
+      const errorMsg = error.message;
+      try {
+        const errorData = JSON.parse(errorMsg);
+        // Se é um erro do backend, mostrar a mensagem específica
+        const firstError = Object.values(errorData)[0];
+        setErro(Array.isArray(firstError) ? firstError[0] : firstError);
+      } catch {
+        setErro(errorMsg || 'Erro ao fazer login/registro. Tente novamente.');
+      }
+    } finally {
+      setCarregando(false);
     }
   };
 
@@ -143,14 +160,35 @@ export default function Login() {
             />
           )}
 
+          {/* No login, pede username. No registro, pede email */}
           <input 
-            type="text" 
-            placeholder={modo === 'login' ? 'Usuário (ou admin)' : 'Email'} 
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
+            type={modo === 'login' ? 'text' : 'email'} 
+            placeholder={modo === 'login' ? 'Nome de usuário' : 'Email'} 
+            value={modo === 'login' ? username : email}
+            onChange={(e) => modo === 'login' ? setUsername(e.target.value) : setEmail(e.target.value)}
             style={inputStyle} 
             required
           />
+
+          {/* Campos de nome só no registro */}
+          {modo === 'register' && (
+            <>
+              <input 
+                type="text" 
+                placeholder="Primeiro nome (opcional)" 
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+                style={inputStyle}
+              />
+              <input 
+                type="text" 
+                placeholder="Último nome (opcional)" 
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+                style={inputStyle}
+              />
+            </>
+          )}
 
           <input 
             type="password" 
@@ -159,12 +197,31 @@ export default function Login() {
             onChange={(e) => setPassword(e.target.value)}
             style={inputStyle} 
             required
+            minLength="8"
           />
+
+          {/* Confirmação de senha no registro */}
+          {modo === 'register' && (
+            <input 
+              type="password" 
+              placeholder="Confirmar senha" 
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              style={inputStyle}
+              required
+              minLength="8"
+            />
+          )}
 
           {erro && <p style={{ color: '#ff5555', fontSize: '0.8rem', textAlign: 'left' }}>{erro}</p>}
 
-          <button type="submit" className="btn-primary" style={{ padding: '12px', marginTop: '10px' }}>
-            {modo === 'login' ? 'Entrar' : 'Criar Conta'}
+          <button 
+            type="submit" 
+            className="btn-primary" 
+            style={{ padding: '12px', marginTop: '10px' }}
+            disabled={carregando}
+          >
+            {carregando ? 'Processando...' : (modo === 'login' ? 'Entrar' : 'Criar Conta')}
           </button>
         </form>
 

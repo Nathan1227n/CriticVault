@@ -1,14 +1,14 @@
 import { useState, useEffect } from 'react';
 import { useParams, Link } from 'react-router-dom';
-import axios from 'axios';
 
 export default function ReviewDetail() {
   const { id } = useParams(); // Pega o ID da URL
   const [review, setReview] = useState(null);
 
   useEffect(() => {
-    axios.get(`http://127.0.0.1:8000/api/reviews/${id}/`)
-      .then(response => setReview(response.data))
+    fetch(`http://localhost:8000/api/reviews/${id}/`)
+      .then(response => response.json())
+      .then(data => setReview(data))
       .catch(error => console.error("Erro ao buscar review:", error));
   }, [id]);
 

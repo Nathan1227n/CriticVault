@@ -1,40 +1,110 @@
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect } from 'react';
+import authService from '../services/authService';
 
 export default function Navbar() {
-  // Verifica se existe um token salvo (ou seja, se está logado)
-  const isLogado = !!localStorage.getItem('access_token');
+  const navigate = useNavigate();
+  const [usuario, setUsuario] = useState(null);
+  const [isLogado, setIsLogado] = useState(false);
+
+  useEffect(() => {
+    // Verificar se está logado
+    if (authService.isAuthenticated()) {
+      setIsLogado(true);
+      // Tentar carregar dados do usuário da LS
+      const userData = localStorage.getItem('user');
+      if (userData) {
+        setUsuario(JSON.parse(userData));
+      }
+    } else {
+      setIsLogado(false);
+      setUsuario(null);
+    }
+  }, []);
 
   // Função para deslogar
-  const handleLogout = () => {
-    localStorage.removeItem('access_token');
-    localStorage.removeItem('refresh_token');
-    localStorage.removeItem('username');
-    window.location.href = '/'; // Volta pra home e recarrega
+  const handleLogout = async () => {
+    try {
+      const token = authService.getAccessToken();
+      if (token) {
+        await authService.logout(token);
+      }
+    } catch (error) {
+      console.error('Erro ao fazer logout:', error);
+    } finally {
+      // Limpar tokens mesmo se houver erro
+      authService.clearTokens();
+      setIsLogado(false);
+      setUsuario(null);
+      navigate('/');
+    }
   };
 
   return (
-    <nav style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '20px 40px', borderBottom: '1px solid #30363d' }}>
-      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-        <div style={{ backgroundColor: 'var(--primary-green)', color: '#000', padding: '5px', fontWeight: 'bold', borderRadius: '4px' }}>CV</div>
+    <nav style={{ 
+      display: 'flex', 
+      justifyContent: 'space-between', 
+      alignItems: 'center', 
+      padding: '20px 40px', 
+      borderBottom: '1px solid #30363d',
+      backgroundColor: '#0d1117'
+    }}>
+      {/* Logo e Nome */}
+      <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none' }}>
+        <div style={{ 
+          backgroundColor: 'var(--primary-green)', 
+          color: '#000', 
+          padding: '5px', 
+          fontWeight: 'bold', 
+          borderRadius: '4px' 
+        }}>
+          CV
+        </div>
         <h2 style={{ color: 'white', margin: 0 }}>CriticVault</h2>
-      </div>
+      </Link>
       
+      {/* Links Centrais */}
       <div style={{ display: 'flex', gap: '20px', alignItems: 'center' }}>
         <Link to="/" style={{ color: 'white', textDecoration: 'none' }}>Início</Link>
         <Link to="/reviews" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Reviews</Link>
-        {/* Mostra o link do perfil só se estiver logado */}
         {isLogado && (
           <Link to="/perfil" style={{ color: 'var(--text-muted)', textDecoration: 'none' }}>Meu Perfil</Link>
         )}
       </div>
 
-      <div>
+      {/* Seção de Autenticação */}
+      <div style={{ display: 'flex', gap: '15px', alignItems: 'center' }}>
+        {isLogado && usuario && (
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+            <Link 
+              to="/perfil/settings" 
+              style={{ 
+                color: 'var(--text-muted)', 
+                textDecoration: 'none',
+                fontSize: '0.9rem'
+              }}
+            >
+              {usuario.username}
+            </Link>
+          </div>
+        )}
+        
         {isLogado ? (
-          <button onClick={handleLogout} className="btn-outline" style={{ borderColor: '#ff5252', color: '#ff5252' }}>
+          <button 
+            onClick={handleLogout} 
+            className="btn-outline" 
+            style={{ 
+              borderColor: '#ff5252', 
+              color: '#ff5252',
+              cursor: 'pointer'
+            }}
+          >
             Sair
           </button>
         ) : (
-          <Link to="/login" className="btn-primary" style={{ textDecoration: 'none' }}>→ Entrar</Link>
+          <Link to="/login" className="btn-primary" style={{ textDecoration: 'none' }}>
+            → Entrar
+          </Link>
         )}
       </div>
     </nav>

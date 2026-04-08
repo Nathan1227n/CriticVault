@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useParams, useNavigate, Link } from 'react-router-dom';
-import axios from 'axios';
+import authService from '../services/authService';
 
 export default function EditReview() {
   const { id } = useParams();
@@ -10,35 +10,57 @@ export default function EditReview() {
   const [texto, setTexto] = useState('');
   const [tituloItem, setTituloItem] = useState('');
   const [carregando, setCarregando] = useState(true);
+  const [erro, setErro] = useState('');
 
   useEffect(() => {
     // Busca os dados atuais da review para preencher os campos
-    axios.get(`http://127.0.0.1:8000/api/reviews/${id}/`)
-      .then(response => {
-        setNota(response.data.nota);
-        setTexto(response.data.texto);
-        setTituloItem(response.data.titulo_item);
+    fetch(`http://localhost:8000/api/reviews/${id}/`)
+      .then(response => response.json())
+      .then(data => {
+        setNota(data.nota);
+        setTexto(data.texto);
+        setTituloItem(data.titulo_item);
         setCarregando(false);
       })
       .catch(error => {
         console.error("Erro ao carregar a review:", error);
+        setErro("Erro ao carregar a review");
         setCarregando(false);
       });
   }, [id]);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setErro('');
     try {
+      const token = authService.getAccessToken();
+      if (!token) {
+        navigate('/login');
+        return;
+      }
+      
       // Usa PATCH para atualizar apenas os campos que foram modificados
-      await axios.patch(`http://127.0.0.1:8000/api/reviews/${id}/`, {
-        nota: parseInt(nota),
-        texto: texto
+      const response = await fetch(`http://localhost:8000/api/reviews/${id}/`, {
+        method: 'PATCH',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          nota: parseInt(nota),
+          texto: texto
+        })
       });
+      
+      if (!response.ok) {
+        throw new Error('Erro ao atualizar');
+      }
+      
       // Volta para o perfil após salvar
       navigate('/perfil');
     } catch (error) {
       console.error("Erro ao atualizar review:", error);
-      alert("Erro ao salvar. Verifique se a nota está entre 0 e 100.");
+      setErro("Erro ao salvar. Verifique se a nota está entre 0 e 100.");
     }
   };
 
@@ -57,6 +79,18 @@ export default function EditReview() {
         </p>
 
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          
+          {erro && (
+            <div style={{ 
+              backgroundColor: '#3c2626', 
+              color: '#ff5555', 
+              padding: '12px', 
+              borderRadius: '6px',
+              fontSize: '0.9rem'
+            }}>
+              {erro}
+            </div>
+          )}
           
           <div>
             <label style={{ display: 'block', marginBottom: '10px', color: 'var(--text-muted)' }}>Nota (0 a 100)</label>

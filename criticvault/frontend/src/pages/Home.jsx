@@ -1,17 +1,18 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
+import authService from '../services/authService';
 
 export default function Home() {
   const [reviews, setReviews] = useState([]);
   const [filtroTipo, setFiltroTipo] = useState('TODOS');
   
-  const isLogado = !!localStorage.getItem('access_token');
+  const isLogado = authService.isAuthenticated();
 
   useEffect(() => {
-    axios.get('http://127.0.0.1:8000/api/reviews/')
-      .then(response => {
-        setReviews(response.data);
+    fetch('http://localhost:8000/api/reviews/')
+      .then(response => response.json())
+      .then(data => {
+        setReviews(data);
       })
       .catch(error => console.error("Erro ao buscar os dados da API!", error));
   }, []);

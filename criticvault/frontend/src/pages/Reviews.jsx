@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import axios from 'axios';
 
 export default function Reviews() {
   const [reviews, setReviews] = useState([]);
@@ -9,9 +8,10 @@ export default function Reviews() {
 
   useEffect(() => {
     // Busca todas as reviews no Controlador (Django)
-    axios.get('http://127.0.0.1:8000/api/reviews/')
-      .then(response => {
-        setReviews(response.data);
+    fetch('http://localhost:8000/api/reviews/')
+      .then(response => response.json())
+      .then(data => {
+        setReviews(data);
       })
       .catch(error => console.error("Erro ao buscar reviews:", error));
   }, []);
