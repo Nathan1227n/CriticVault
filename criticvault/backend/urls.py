@@ -1,9 +1,9 @@
 from django.contrib import admin
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from api.views import ItemViewSet, ReviewViewSet
+from catalog.views import ItemViewSet, ReviewViewSet
 from rest_framework_simplejwt.views import TokenObtainPairView, TokenRefreshView
-from api.views import RegistroUsuarioView # Importe a view que criamos acima
+from catalog.views import RegistroUsuarioView # Importe a view que criamos acima
 
 router = DefaultRouter()
 router.register(r'itens', ItemViewSet, basename='item')
