@@ -55,14 +55,6 @@ O projeto é ideal para fins educacionais, demonstrando:
 ```
 criticvault/
 │
-├── 📋 Documentação
-│   ├── README.md                          ← Este arquivo
-│   ├── SUMMARY.md                         ← Resumo executivo da refatoração
-│   ├── REFACTORING_AUTH.md               ← Detalhes da refatoração de autenticação
-│   ├── FRONTEND_UPDATE_GUIDE.md          ← Guia de atualização do frontend
-│   ├── IMPLEMENTATION_CHECKLIST.md       ← Checklist de implementação
-│   └── PROJECT_STRUCTURE.md              ← Visualização da arquitetura
-│
 ├── 🔐 Backend (Django)
 │   ├── manage.py                          ← CLI do Django
 │   ├── db.sqlite3                         ← Banco de dados SQLite
